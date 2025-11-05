@@ -1,5 +1,6 @@
 buildscript {
     ext.kotlin_version = '1.8.22'
+    ext.buildToolsVersion = '34.0.0'
     repositories {
         google()
         mavenCentral()
@@ -24,13 +25,6 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(':app')
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            project.android {
-                buildToolsVersion "34.0.0"
-            }
-        }
-    }
 }
 
 tasks.register("clean", Delete) {
