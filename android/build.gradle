@@ -24,6 +24,13 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(':app')
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                buildToolsVersion "34.0.0"
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
