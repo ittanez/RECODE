@@ -25,6 +25,7 @@ ReCode est une application Android de thérapie autonome permettant à l'utilisa
 - Transformer les sous-modalités sensorielles (VAKOG) d'une représentation mentale
 - Créer un ancrage kinesthésique pour retrouver l'état ressource
 - Permettre une pratique autonome, sans thérapeute
+- **NOUVEAU** : Utiliser le support visuel (le **Cercle Miroir**) comme un médiateur interactif pour faciliter la manipulation symbolique de la représentation mentale intérieure
 
 ---
 
@@ -58,6 +59,12 @@ ReCode est une application Android de thérapie autonome permettant à l'utilisa
 ┌─────────────────┐
 │ 5. TRANSFO      │  Transformation visuelle progressive (80s)
 │ (Transform)     │  → 4 phases hypnotiques
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ 5b. FEEDBACK    │  Message "LE CODE EST MODIFIÉ ✨" (5s)
+│ (Post-Transfo)  │  → Vibration longue + cercle transformé
 └────────┬────────┘
          │
          ▼
@@ -98,9 +105,10 @@ Induire un état de relaxation et de réceptivité hypnotique par la respiration
 
 #### Interactions
 - **Retour haptique** : Vibration 50ms à chaque expiration (détection automatique)
-- **Guidance yeux** (optionnel) :
+- **Guidance yeux** (protocole YO/YF) :
   - Cycle 2 : "Si vous le souhaitez... fermez doucement les yeux"
-  - Cycle 4 : "Vous pouvez rouvrir les yeux... en douceur"
+  - **Cycle 3 (NOUVEAU)** : "Laissez vos yeux se fermer. Faites le point sur l'image que vous venez de choisir."
+  - Cycle 4 : "Vous pouvez rouvrir les yeux... en douceur, ou les garder clos si cela est confortable. L'écran va maintenant vous guider."
 - **Continuer** : Toucher l'écran après 24 secondes
 - **Transition** : Fade 800ms vers écran Thèmes
 
@@ -151,35 +159,75 @@ transformationState.theme = 'fear' | 'belief' | 'memory' | 'resource'
 #### Objectif
 Explorer les sous-modalités sensorielles (VAKOG) de la représentation mentale actuelle.
 
-#### Concept clé
-**LA BOULE = L'IMAGE MENTALE**
-L'utilisateur ne charge pas d'image. La boule/cercle à l'écran représente symboliquement l'image mentale qu'il a dans sa tête.
+#### Concept clé : Le Cercle Miroir
+**LE CERCLE = VOTRE REPRÉSENTATION INTÉRIEURE**
+
+**NOTE PÉDAGOGIQUE CRITIQUE** : Le cercle est le **Symbole Miroir** de l'image ou de la sensation que vous avez dans votre tête. Les gestes (glisser, pincer) vous aident à donner un mouvement physique à une idée intérieure.
+
+**Décision Design** :
+- ❌ **PAS de téléchargement d'image** : L'objectif de la PNL est de manipuler la représentation symbolique et non une photo concrète. Une photo chargerait trop l'émotion et rendrait la dissociation difficile.
+- ✅ **Cercle azur constant** : Maintenir le cercle sur une couleur azur constante tout au long des 6 exercices pour renforcer la cohérence visuelle de la "Représentation" unique manipulée.
+
+#### Structure des exercices (Alternance Yeux Ouverts/Fermés)
+
+Chaque exercice suit une structure en **3 phases** :
+
+**Étape 1 : Manipulation (YO - Yeux Ouverts)**
+- Question posée
+- Interaction tactile pour ajuster le cercle
+- Feedback visuel immédiat
+
+**Étape 2 : Intégration (YF - Yeux Fermés)**
+- Bouton "Fermer les yeux et ressentir" (recommandé mais non-bloquant)
+- Instruction : "Fermez les yeux. Observez l'image ajustée. Prenez note de la sensation dans votre corps."
+- Pause silencieuse (5-10 secondes)
+
+**Étape 3 : Validation (YO - Continuer)**
+- Bouton "Suivant"
+- Instruction : "Ouvrez les yeux. Nous passons à l'attribut suivant."
 
 #### 6 Exercices successifs
 
-##### 3.3.1 Distance
+##### 3.3.1 Distance (Exemple structure 3 phases)
+
+**Étape 1 : Manipulation (YO)**
 - **Question** : "Quand vous pensez à cette situation… l'image est-elle proche ou éloignée ?"
 - **Interaction** : Glisser verticalement (drag)
   - ⬆️ Haut = Proche (cercle GRAND 200px, opaque)
   - ⬇️ Bas = Éloigné (cercle PETIT 100px, transparent)
-- **Visuel** : Cercle bleu azur avec gradient radial
-- **Labels** : "Proche" / "Moyen" / "Éloigné" + pourcentage
+- **Visuel** : Cercle **azur constant** avec gradient radial
+- **Labels** : "PROCHE ⬆️" / "Moyen" / "ÉLOIGNÉ ⬇️" + pourcentage
+- **Instruction** : "Ajustez la distance sur l'écran pour qu'elle corresponde à celle que vous avez en tête."
+- **Feedback haptique** : Léger retour (20ms) lors du drag
+
+**Étape 2 : Intégration (YF)**
+- **Bouton** : "Fermer les yeux et ressentir" (apparaît après ajustement)
+- **Instruction** : "Fermez les yeux. Observez l'image ajustée. Prenez note de la sensation dans votre corps."
+- **Durée** : 5-10 secondes (timer invisible)
+
+**Étape 3 : Validation (YO)**
+- **Bouton** : "Suivant"
+- **Instruction** : "Ouvrez les yeux. Nous passons à l'attribut suivant."
 
 ##### 3.3.2 Luminosité
 - **Question** : "L'image est-elle lumineuse ou sombre ?"
 - **Interaction** : Slider horizontal (0.0 - 1.0)
   - Gauche = Sombre (opacité 0%)
   - Droite = Lumineux (opacité 100%)
-- **Visuel** : Cercle 220px dont l'opacité varie
+- **Visuel** : Cercle **azur constant** 220px dont l'opacité varie
 - **Labels** : "Sombre" ↔ "Lumineux"
+- **Feedback haptique** : Léger retour (20ms) lors du déplacement du slider
+- **Structure 3 phases** : Idem 3.3.1 (Manipulation → Intégration YF → Validation YO)
 
 ##### 3.3.3 Taille
 - **Question** : "Cette image occupe-t-elle tout votre champ de vision, ou juste une partie ?"
 - **Interaction** : Geste pincer (pinch-to-zoom)
   - Pincer = Petit (100px)
   - Écarter = Grand (250px)
-- **Visuel** : Cercle vert émeraude avec icône `open_in_full`
+- **Visuel** : Cercle **azur constant** avec icône `open_in_full`
 - **Labels** : "Petit" / "Moyen" / "Grand" + pourcentage
+- **Feedback haptique** : Léger retour (20ms) lors du pinch
+- **Structure 3 phases** : Idem 3.3.1
 
 ##### 3.3.4 Couleur
 - **Question** : "Choisissez une couleur qui représente cette situation"
@@ -188,14 +236,19 @@ L'utilisateur ne charge pas d'image. La boule/cercle à l'écran représente sym
   - Gris, Rouge, Orange, Jaune, Vert
   - Bleu, Indigo, Violet, Or, Émeraude
 - **Visuel** : Cercles 60px, bordure or si sélectionné
+- **Note** : Le cercle principal reste azur, seuls les boutons de choix sont colorés
+- **Structure 3 phases** : Idem 3.3.1
 
-##### 3.3.5 Netteté
+##### 3.3.5 Netteté (MODIFIÉ : Cercle uniforme)
 - **Question** : "L'image est-elle nette ou floue ?"
 - **Interaction** : Slider horizontal (0.0 - 1.0)
-- **Visuel** : Rectangle 220px avec BackdropFilter blur
+- **Visuel** : **Cercle azur 220px** (non rectangle !) avec BackdropFilter blur
   - Flou max : sigmaX/Y = 10
   - Net : sigmaX/Y = 0
 - **Labels** : "Flou" ↔ "Net"
+- **Feedback haptique** : Léger retour (20ms) lors du déplacement du slider
+- **Justification** : Maintenir la cohérence de l'objet "Cercle Miroir" manipulé
+- **Structure 3 phases** : Idem 3.3.1
 
 ##### 3.3.6 Son
 - **Question** : "Y a-t-il un son associé à cette image ?"
@@ -204,6 +257,7 @@ L'utilisateur ne charge pas d'image. La boule/cercle à l'écran représente sym
   - Doux
   - Fort
 - **Visuel** : Boutons arrondis, fond or si sélectionné
+- **Structure 3 phases** : Idem 3.3.1
 
 #### Navigation
 - **Bouton suivant** : "Suivant" (1-5) ou "Transformer" (6)
@@ -284,7 +338,30 @@ Original (de l'exploration) → Transformé
 
 #### Interactions
 - **Aucune** : L'utilisateur observe passivement
-- **Transition automatique** : Vers écran Ancrage après 80s
+- **Transition automatique** : Vers écran Feedback post-transformation après 80s
+
+---
+
+### 3.5.0 FEEDBACK POST-TRANSFORMATION (NOUVEAU)
+
+#### Objectif
+Expliciter le changement effectué et ancrer la nouvelle représentation avant de passer à l'ancrage kinesthésique.
+
+#### Durée
+**5 secondes** (pause intégrative)
+
+#### Éléments visuels
+- **Message principal** : "LE CODE EST MODIFIÉ ✨" (42px, bold, or, centré)
+- **Animation** : Fade in 1s → Stable 3s → Fade out 1s
+- **Cercle transformé** : Reste visible dans son état final (émeraude, petit, éloigné, lumineux)
+- **Background** : Gradient apaisant (noir → violet profond)
+
+#### Interactions
+- **Vibration longue** : 500ms (confirmation haptique du changement)
+- **Transition automatique** : Vers écran Ancrage après 5 secondes
+
+#### Justification PNL/Hypnose
+Le changement visuel progressif (80s) n'est pas suffisant. Il faut un **texte de bilan explicite** pour que le cerveau enregistre consciemment la modification effectuée. C'est le pont entre la transformation visuelle et l'ancrage kinesthésique.
 
 ---
 
@@ -530,6 +607,8 @@ TextTheme(
 - ✅ Interface épurée, peu de texte
 - ✅ Langage permissif ("Si vous le souhaitez...", "Vous pouvez...")
 - ✅ Rythme lent et apaisant
+- ✅ **Protocole Yeux Ouverts / Yeux Fermés (YO/YF)** : Alternance systématique pour favoriser l'intégration
+- ❌ **PAS de téléchargement d'image** : Le cercle est un symbole neutre. Une photo concrète chargerait trop l'émotion et rendrait la dissociation difficile (principe PNL)
 
 ### 6.3 Performances
 - ✅ Lancement < 2 secondes
