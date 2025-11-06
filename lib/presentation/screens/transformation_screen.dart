@@ -78,7 +78,7 @@ class _TransformationScreenState extends ConsumerState<TransformationScreen>
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            AnchorScreen(transformedSubmodality: _transformedSubmodality),
+            FeedbackScreen(transformedSubmodality: _transformedSubmodality),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,
