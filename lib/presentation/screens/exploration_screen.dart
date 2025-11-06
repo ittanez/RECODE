@@ -66,6 +66,15 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
                   'Sur une échelle de 0 à 10, quelle est l\'intensité de cette émotion/sensation maintenant ?',
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  '(0 = Minimum, 10 = Maximum)',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.gold.withOpacity(0.7),
+                        fontStyle: FontStyle.italic,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 24),
                 Slider(
                   value: intensity.toDouble(),
@@ -83,7 +92,25 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
                   intensity.toString(),
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         color: AppTheme.gold,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
                       ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '0\nMin',
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    Text(
+                      '10\nMax',
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ],
             );
@@ -318,11 +345,11 @@ class _DistanceVisual extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 100 + (distance * 50),
-        height: 100 + (distance * 50),
+        width: 200 - (distance * 100), // Proche = grand, Éloigné = petit
+        height: 200 - (distance * 100),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppTheme.azure.withOpacity(0.3 - (distance * 0.2)),
+          color: AppTheme.azure.withOpacity(0.2 + (1 - distance) * 0.4), // Proche = plus opaque
         ),
       ),
     );
@@ -337,8 +364,8 @@ class _BrightnessVisual extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 150,
-        height: 150,
+        width: 220,
+        height: 220,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: AppTheme.azure.withOpacity(brightness),
@@ -356,8 +383,8 @@ class _SizeVisual extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 50 + (size * 120),
-        height: 50 + (size * 120),
+        width: 100 + (size * 150), // Min 100, Max 250
+        height: 100 + (size * 150),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: AppTheme.emerald.withOpacity(0.5),
@@ -375,17 +402,17 @@ class _ClarityVisual extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(30),
         child: BackdropFilter(
           filter: ImageFilter.blur(
             sigmaX: (1 - clarity) * 10,
             sigmaY: (1 - clarity) * 10,
           ),
           child: Container(
-            width: 150,
-            height: 150,
+            width: 220,
+            height: 220,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(30),
               color: AppTheme.gold.withOpacity(0.5),
             ),
             child: const Center(
@@ -542,14 +569,14 @@ class _InteractiveDistanceVisualState extends State<_InteractiveDistanceVisual> 
             // Interactive circle
             Center(
               child: Container(
-                width: 100 + (widget.distance * 50),
-                height: 100 + (widget.distance * 50),
+                width: 200 - (widget.distance * 100), // Proche = grand, Éloigné = petit
+                height: 200 - (widget.distance * 100),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppTheme.azure.withOpacity(0.5 - (widget.distance * 0.3)),
-                      AppTheme.primary.withOpacity(0.3 - (widget.distance * 0.2)),
+                      AppTheme.azure.withOpacity(0.2 + (1 - widget.distance) * 0.4), // Proche = plus opaque
+                      AppTheme.primary.withOpacity(0.1 + (1 - widget.distance) * 0.3),
                       Colors.transparent,
                     ],
                   ),
@@ -642,8 +669,8 @@ class _InteractiveSizeVisualState extends State<_InteractiveSizeVisual> {
             Center(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 100),
-                width: 50 + (widget.size * 120),
-                height: 50 + (widget.size * 120),
+                width: 100 + (widget.size * 150), // Min 100, Max 250
+                height: 100 + (widget.size * 150),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
@@ -664,7 +691,7 @@ class _InteractiveSizeVisualState extends State<_InteractiveSizeVisual> {
                 child: Center(
                   child: Icon(
                     Icons.open_in_full,
-                    size: 30 + (widget.size * 20),
+                    size: 40 + (widget.size * 30), // Icon proportionnel
                     color: Colors.white.withOpacity(0.8),
                   ),
                 ),

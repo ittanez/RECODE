@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,81 +20,33 @@ class AnchorScreen extends ConsumerStatefulWidget {
   ConsumerState<AnchorScreen> createState() => _AnchorScreenState();
 }
 
-enum GestureType { circle, heart, infinity }
+enum AnchorType { fingerPress, wristTouch, fingerCross }
 
 class _AnchorScreenState extends ConsumerState<AnchorScreen> {
-  GestureType? _selectedGesture;
+  AnchorType? _selectedAnchor;
   int _anchorCount = 0;
   final int _maxAnchors = 3;
-  List<Offset> _currentPath = [];
-  bool _isDrawing = false;
 
-  void _onGestureStart(Offset position) {
-    setState(() {
-      _isDrawing = true;
-      _currentPath = [position];
-    });
-  }
-
-  void _onGestureUpdate(Offset position) {
-    if (_isDrawing) {
-      setState(() {
-        _currentPath.add(position);
-      });
-
-      // Haptic feedback every 10 points for continuous feedback
-      if (_currentPath.length % 10 == 0) {
-        _triggerHaptic();
-      }
-    }
-  }
-
-  Future<void> _triggerHaptic() async {
-    if (await Vibration.hasVibrator() ?? false) {
-      Vibration.vibrate(duration: 20);
-    } else {
-      HapticFeedback.selectionClick();
-    }
-  }
-
-  void _onGestureEnd() {
-    if (_isDrawing && _currentPath.length > 10) {
-      // Validate gesture
-      if (_validateGesture()) {
-        HapticFeedback.mediumImpact();
-        setState(() {
-          _anchorCount++;
-          _isDrawing = false;
-          _currentPath = [];
-        });
-
-        if (_anchorCount >= _maxAnchors) {
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              _navigateToJournal();
-            }
-          });
-        }
+  Future<void> _performAnchor() async {
+    if (_anchorCount < _maxAnchors) {
+      if (await Vibration.hasVibrator() ?? false) {
+        Vibration.vibrate(duration: 100);
       } else {
-        // Invalid gesture - shake feedback
-        HapticFeedback.heavyImpact();
-        setState(() {
-          _currentPath = [];
-          _isDrawing = false;
+        HapticFeedback.mediumImpact();
+      }
+
+      setState(() {
+        _anchorCount++;
+      });
+
+      if (_anchorCount >= _maxAnchors) {
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            _navigateToJournal();
+          }
         });
       }
-    } else {
-      setState(() {
-        _currentPath = [];
-        _isDrawing = false;
-      });
     }
-  }
-
-  bool _validateGesture() {
-    // Simple validation: just check if path has enough points
-    // In a real implementation, you'd do shape recognition
-    return _currentPath.length > 15;
   }
 
   void _navigateToJournal() {
@@ -129,20 +80,20 @@ class _AnchorScreenState extends ConsumerState<AnchorScreen> {
           ),
         ),
         child: SafeArea(
-          child: _selectedGesture == null ? _buildGestureSelection() : _buildDrawingArea(),
+          child: _selectedAnchor == null ? _buildAnchorSelection() : _buildAnchorPractice(),
         ),
       ),
     );
   }
 
-  Widget _buildGestureSelection() {
+  Widget _buildAnchorSelection() {
     return Column(
       children: [
         const SizedBox(height: 48),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
           child: Text(
-            'Choisissez votre geste d\'ancrage',
+            'Choisissez votre ancrage physique',
             style: Theme.of(context).textTheme.headlineLarge,
             textAlign: TextAlign.center,
           ).animate().fadeIn(duration: 1000.ms),
@@ -151,31 +102,34 @@ class _AnchorScreenState extends ConsumerState<AnchorScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
           child: Text(
-            'Ce geste sera votre point d\'ancrage pour retrouver cet état',
+            'Un geste simple que vous pourrez reproduire n\'importe où',
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ).animate().fadeIn(duration: 1000.ms, delay: 300.ms),
         ),
         const Spacer(),
-        _GestureOption(
-          type: GestureType.circle,
-          label: 'Cercle',
-          description: 'Un mouvement circulaire, symbole de continuité',
-          onTap: () => setState(() => _selectedGesture = GestureType.circle),
+        _AnchorOption(
+          type: AnchorType.fingerPress,
+          label: 'Presser deux doigts',
+          description: 'Pressez votre pouce contre votre index',
+          icon: '👌',
+          onTap: () => setState(() => _selectedAnchor = AnchorType.fingerPress),
         ),
         const SizedBox(height: 24),
-        _GestureOption(
-          type: GestureType.heart,
-          label: 'Cœur',
-          description: 'Un cœur, symbole d\'amour et de bienveillance',
-          onTap: () => setState(() => _selectedGesture = GestureType.heart),
+        _AnchorOption(
+          type: AnchorType.wristTouch,
+          label: 'Toucher le poignet',
+          description: 'Touchez votre poignet avec deux doigts',
+          icon: '✌️',
+          onTap: () => setState(() => _selectedAnchor = AnchorType.wristTouch),
         ),
         const SizedBox(height: 24),
-        _GestureOption(
-          type: GestureType.infinity,
-          label: 'Infini',
-          description: 'Le symbole infini, représentant l\'éternité',
-          onTap: () => setState(() => _selectedGesture = GestureType.infinity),
+        _AnchorOption(
+          type: AnchorType.fingerCross,
+          label: 'Croiser les doigts',
+          description: 'Croisez l\'index et le majeur',
+          icon: '🤞',
+          onTap: () => setState(() => _selectedAnchor = AnchorType.fingerCross),
         ),
         const Spacer(),
         const SizedBox(height: 48),
@@ -183,68 +137,107 @@ class _AnchorScreenState extends ConsumerState<AnchorScreen> {
     );
   }
 
-  Widget _buildDrawingArea() {
+  Widget _buildAnchorPractice() {
+    String instruction = '';
+    switch (_selectedAnchor!) {
+      case AnchorType.fingerPress:
+        instruction = 'Pressez fermement votre pouce\ncontre votre index';
+        break;
+      case AnchorType.wristTouch:
+        instruction = 'Touchez votre poignet\navec deux doigts';
+        break;
+      case AnchorType.fingerCross:
+        instruction = 'Croisez votre index\net votre majeur';
+    }
+
     return Column(
       children: [
-        const SizedBox(height: 24),
+        const Spacer(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
           child: Text(
-            'Tracez votre geste',
+            'Créez votre ancrage',
             style: Theme.of(context).textTheme.headlineLarge,
             textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
           child: Text(
-            'Répétez le geste 3 fois lentement\nSentez la connexion se créer',
-            style: Theme.of(context).textTheme.bodyMedium,
+            instruction,
+            style: Theme.of(context).textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(height: 24),
-        // Counter
+        const SizedBox(height: 48),
         Text(
           '$_anchorCount / $_maxAnchors',
           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                 color: AppTheme.gold,
-                fontSize: 32,
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
               ),
         ),
-        const SizedBox(height: 32),
-        // Drawing area
-        Expanded(
-          child: GestureDetector(
-            onPanStart: (details) => _onGestureStart(details.localPosition),
-            onPanUpdate: (details) => _onGestureUpdate(details.localPosition),
-            onPanEnd: (_) => _onGestureEnd(),
-            child: Container(
-              margin: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: AppTheme.gold.withOpacity(0.3),
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(16),
+        const SizedBox(height: 48),
+        GestureDetector(
+          onTap: _performAnchor,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppTheme.gold.withOpacity(0.6),
+                  AppTheme.emerald.withOpacity(0.4),
+                  AppTheme.azure.withOpacity(0.2),
+                ],
               ),
-              child: CustomPaint(
-                painter: _GesturePainter(
-                  path: _currentPath,
-                  gestureType: _selectedGesture!,
-                  isDrawing: _isDrawing,
+              border: Border.all(
+                color: AppTheme.gold,
+                width: 3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.gold.withOpacity(0.4),
+                  blurRadius: 30,
+                  spreadRadius: 5,
                 ),
-                size: Size.infinite,
+              ],
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _anchorCount >= _maxAnchors ? Icons.check : Icons.touch_app,
+                    size: 60,
+                    color: Colors.white.withOpacity(0.8),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Faites le geste\npuis touchez ici',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
           ),
-        ),
+        ).animate(onPlay: (controller) => controller.repeat())
+            .fadeIn(duration: 1500.ms)
+            .then()
+            .fadeOut(duration: 1500.ms),
+        const Spacer(),
         if (_anchorCount >= _maxAnchors)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24),
             child: Text(
-              'Votre ancrage est créé ✨',
+              'Votre ancrage est créé ✨\nVous pourrez le reproduire n\'importe où',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: AppTheme.gold,
                   ),
@@ -254,22 +247,24 @@ class _AnchorScreenState extends ConsumerState<AnchorScreen> {
                 .fadeIn(duration: 1000.ms)
                 .slideY(begin: 0.2, end: 0),
           ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 48),
       ],
     );
   }
 }
 
-class _GestureOption extends StatelessWidget {
-  final GestureType type;
+class _AnchorOption extends StatelessWidget {
+  final AnchorType type;
   final String label;
   final String description;
+  final String icon;
   final VoidCallback onTap;
 
-  const _GestureOption({
+  const _AnchorOption({
     required this.type,
     required this.label,
     required this.description,
+    required this.icon,
     required this.onTap,
   });
 
@@ -296,14 +291,17 @@ class _GestureOption extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 60,
-              height: 60,
+              width: 70,
+              height: 70,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppTheme.gold.withOpacity(0.2),
               ),
-              child: CustomPaint(
-                painter: _GestureIconPainter(type: type),
+              child: Center(
+                child: Text(
+                  icon,
+                  style: const TextStyle(fontSize: 36),
+                ),
               ),
             ),
             const SizedBox(width: 20),
@@ -315,9 +313,10 @@ class _GestureOption extends StatelessWidget {
                     label,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w600,
+                          fontSize: 18,
                         ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     description,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -329,182 +328,5 @@ class _GestureOption extends StatelessWidget {
         ),
       ).animate().fadeIn(duration: 800.ms).slideX(begin: -0.2, end: 0),
     );
-  }
-}
-
-class _GestureIconPainter extends CustomPainter {
-  final GestureType type;
-
-  _GestureIconPainter({required this.type});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppTheme.gold.withOpacity(0.7)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.3;
-
-    switch (type) {
-      case GestureType.circle:
-        canvas.drawCircle(center, radius, paint);
-        break;
-      case GestureType.heart:
-        _drawHeart(canvas, size, paint);
-        break;
-      case GestureType.infinity:
-        _drawInfinity(canvas, size, paint);
-        break;
-    }
-  }
-
-  void _drawHeart(Canvas canvas, Size size, Paint paint) {
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-
-    path.moveTo(w * 0.5, h * 0.7);
-    path.cubicTo(w * 0.2, h * 0.5, w * 0.2, h * 0.2, w * 0.5, h * 0.35);
-    path.cubicTo(w * 0.8, h * 0.2, w * 0.8, h * 0.5, w * 0.5, h * 0.7);
-
-    canvas.drawPath(path, paint);
-  }
-
-  void _drawInfinity(Canvas canvas, Size size, Paint paint) {
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-    final centerY = h * 0.5;
-
-    // Left loop
-    path.moveTo(w * 0.3, centerY);
-    path.cubicTo(w * 0.15, centerY - h * 0.2, w * 0.15, centerY + h * 0.2, w * 0.3, centerY);
-
-    // Right loop
-    path.moveTo(w * 0.7, centerY);
-    path.cubicTo(w * 0.85, centerY + h * 0.2, w * 0.85, centerY - h * 0.2, w * 0.7, centerY);
-
-    // Connect
-    path.moveTo(w * 0.3, centerY);
-    path.lineTo(w * 0.7, centerY);
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _GesturePainter extends CustomPainter {
-  final List<Offset> path;
-  final GestureType gestureType;
-  final bool isDrawing;
-
-  _GesturePainter({
-    required this.path,
-    required this.gestureType,
-    required this.isDrawing,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Draw guide shape
-    final guidePaint = Paint()
-      ..color = AppTheme.gold.withOpacity(0.2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    _drawGuideShape(canvas, size, guidePaint);
-
-    // Draw user path
-    if (path.length > 1) {
-      final pathPaint = Paint()
-        ..color = AppTheme.emerald
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 5
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round;
-
-      final drawnPath = Path();
-      drawnPath.moveTo(path.first.dx, path.first.dy);
-
-      for (int i = 1; i < path.length; i++) {
-        drawnPath.lineTo(path[i].dx, path[i].dy);
-      }
-
-      canvas.drawPath(drawnPath, pathPaint);
-
-      // Draw glow effect
-      final glowPaint = Paint()
-        ..color = AppTheme.emerald.withOpacity(0.3)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 15
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-
-      canvas.drawPath(drawnPath, glowPaint);
-    }
-  }
-
-  void _drawGuideShape(Canvas canvas, Size size, Paint paint) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) * 0.3;
-
-    switch (gestureType) {
-      case GestureType.circle:
-        canvas.drawCircle(center, radius, paint);
-        break;
-      case GestureType.heart:
-        _drawHeartGuide(canvas, size, paint);
-        break;
-      case GestureType.infinity:
-        _drawInfinityGuide(canvas, size, paint);
-        break;
-    }
-  }
-
-  void _drawHeartGuide(Canvas canvas, Size size, Paint paint) {
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-
-    path.moveTo(w * 0.5, h * 0.6);
-    path.cubicTo(w * 0.25, h * 0.45, w * 0.25, h * 0.25, w * 0.5, h * 0.35);
-    path.cubicTo(w * 0.75, h * 0.25, w * 0.75, h * 0.45, w * 0.5, h * 0.6);
-
-    canvas.drawPath(path, paint);
-  }
-
-  void _drawInfinityGuide(Canvas canvas, Size size, Paint paint) {
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-    final centerY = h * 0.5;
-    final loopRadius = w * 0.15;
-
-    // Left loop
-    path.addOval(Rect.fromCenter(
-      center: Offset(w * 0.35, centerY),
-      width: loopRadius * 2,
-      height: loopRadius * 1.5,
-    ));
-
-    // Right loop
-    path.addOval(Rect.fromCenter(
-      center: Offset(w * 0.65, centerY),
-      width: loopRadius * 2,
-      height: loopRadius * 1.5,
-    ));
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_GesturePainter oldDelegate) {
-    return path != oldDelegate.path || isDrawing != oldDelegate.isDrawing;
   }
 }

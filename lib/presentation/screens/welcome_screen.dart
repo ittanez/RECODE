@@ -19,7 +19,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   late AnimationController _breathController;
   bool _showContinueHint = false;
   bool _lastWasInhale = true;
-  String _currentAmbiance = 'ocean'; // ocean, forest, dawn
   bool _eyesClosed = false;
   int _breathCycle = 0;
 
@@ -92,35 +91,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 
-  List<Color> _getAmbianceColors() {
-    switch (_currentAmbiance) {
-      case 'ocean':
-        return [
-          const Color(0xFF0D1117), // Deep night
-          const Color(0xFF1A237E).withOpacity(0.4), // Deep blue
-          const Color(0xFF006994).withOpacity(0.3), // Ocean
-        ];
-      case 'forest':
-        return [
-          const Color(0xFF0D1117),
-          const Color(0xFF1B5E20).withOpacity(0.4), // Forest green
-          const Color(0xFF2E7D32).withOpacity(0.3),
-        ];
-      case 'dawn':
-        return [
-          const Color(0xFF1A1A2E), // Pre-dawn
-          const Color(0xFF4A148C).withOpacity(0.4), // Purple
-          const Color(0xFFFF6F00).withOpacity(0.2), // Dawn orange
-        ];
-      default:
-        return [
-          AppTheme.background,
-          AppTheme.primary.withOpacity(0.3),
-          AppTheme.background,
-        ];
-    }
-  }
-
   String _getEyesGuidance() {
     if (_breathCycle < 2) {
       return '';
@@ -144,26 +114,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: _getAmbianceColors(),
+              colors: [
+                AppTheme.background,
+                AppTheme.primary.withOpacity(0.3),
+                AppTheme.background,
+              ],
             ),
           ),
           child: SafeArea(
             child: Column(
               children: [
-                // Ambiance selector
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildAmbianceButton('ocean', '🌊'),
-                      const SizedBox(width: 16),
-                      _buildAmbianceButton('forest', '🌲'),
-                      const SizedBox(width: 16),
-                      _buildAmbianceButton('dawn', '🌅'),
-                    ],
-                  ),
-                ).animate().fadeIn(duration: 2000.ms),
                 const Spacer(flex: 2),
 
                 // Logo / Title
@@ -265,33 +225,5 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         ),
       ),
     );
-  }
-
-  Widget _buildAmbianceButton(String ambiance, String emoji) {
-    final isSelected = _currentAmbiance == ambiance;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _currentAmbiance = ambiance;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: isSelected
-              ? AppTheme.primary.withOpacity(0.5)
-              : Colors.white.withOpacity(0.1),
-          border: Border.all(
-            color: isSelected ? AppTheme.gold : Colors.white.withOpacity(0.3),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Text(
-          emoji,
-          style: TextStyle(fontSize: isSelected ? 24 : 20),
-        ),
-      ),
-    ).animate(target: isSelected ? 1 : 0).scale(duration: 300.ms);
   }
 }

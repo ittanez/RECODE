@@ -31,9 +31,9 @@ class HypnoticTexts {
     'distance': "Quand vous pensez à cette situation… l'image est-elle proche ou éloignée ?",
     'brightness': "L'image est-elle lumineuse ou sombre ?",
     'size': "Cette image occupe-t-elle tout votre champ de vision, ou juste une partie ?",
-    'color': "Quelle couleur domine cette image ?",
+    'color': "Choisissez une couleur qui représente cette situation",
     'clarity': "L'image est-elle nette ou floue ?",
-    'sound': "Y a-t-il un son mental associé ? Fort / doux / silencieux",
+    'sound': "Y a-t-il un son associé à cette image ?",
   };
 
   // Thèmes de transformation
