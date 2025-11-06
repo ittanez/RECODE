@@ -5,7 +5,7 @@ import '../../core/constants/texts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/use_cases/transformation_state.dart';
 import '../widgets/animated_theme_icons.dart';
-import 'exploration_screen.dart';
+import 'mental_image_creation_screen.dart';
 
 class ThemeSelectionScreen extends ConsumerWidget {
   const ThemeSelectionScreen({super.key});
@@ -52,7 +52,7 @@ class ThemeSelectionScreen extends ConsumerWidget {
                         Navigator.of(context).push(
                           PageRouteBuilder(
                             pageBuilder: (context, animation, secondaryAnimation) =>
-                                const ExplorationScreen(),
+                                const MentalImageCreationScreen(),
                             transitionsBuilder: (context, animation, secondaryAnimation, child) {
                               return FadeTransition(
                                 opacity: animation,

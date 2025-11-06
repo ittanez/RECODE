@@ -11,11 +11,11 @@ import '../../domain/use_cases/transformation_state.dart';
 import '../widgets/submodality_slider.dart';
 import 'transformation_screen.dart';
 
-/// Phase d'exploration (Protocole YO/YF)
+/// Phase d'exploration (Protocole YF/YO - CORRECT)
 enum ExplorationPhase {
-  manipulation, // Phase 1: Ajustement (Yeux Ouverts)
-  integration,  // Phase 2: Ressenti (Yeux Fermés - pause 5-10s)
-  validation,   // Phase 3: Confirmation (Yeux Ouverts)
+  observation,   // Phase 1: Observer VOTRE image (Yeux Fermés - 10-15s)
+  adjustment,    // Phase 2: Ajuster le cercle (Yeux Ouverts - manipulation)
+  validation,    // Phase 3: Confirmer (Yeux Ouverts - "Est-ce correct?")
 }
 
 class ExplorationScreen extends ConsumerStatefulWidget {
@@ -27,10 +27,9 @@ class ExplorationScreen extends ConsumerStatefulWidget {
 
 class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
   int _currentQuestionIndex = 0;
-  ExplorationPhase _currentPhase = ExplorationPhase.manipulation;
+  ExplorationPhase _currentPhase = ExplorationPhase.observation;
   late Submodality _workingSubmodality;
-  bool _showIntroduction = true;
-  bool _integrationTimerStarted = false;
+  bool _observationTimerStarted = false;
 
   final List<String> _questionKeys = [
     'distance',
@@ -41,13 +40,14 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
     'sound',
   ];
 
-  final Map<String, String> _integrationInstructions = {
-    'distance': 'Fermez les yeux. Observez l\'image ajustée. Prenez note de la sensation dans votre corps.',
-    'brightness': 'Fermez les yeux. Ressentez la luminosité de cette image. Comment votre corps réagit-il ?',
-    'size': 'Fermez les yeux. Ressentez la taille de cette image. Observez les sensations.',
-    'color': 'Fermez les yeux. Ressentez cette couleur. Qu\'évoque-t-elle en vous ?',
-    'clarity': 'Fermez les yeux. Ressentez la netteté de cette image. Comment vous sentez-vous ?',
-    'sound': 'Fermez les yeux. Écoutez ce son intérieur. Observez vos sensations.',
+  // Instructions pour la phase d'observation (YF)
+  final Map<String, String> _observationInstructions = {
+    'distance': 'Fermez les yeux.\nObservez VOTRE image.\n\nCette image est-elle proche ou éloignée de vous ?',
+    'brightness': 'Fermez les yeux.\nObservez VOTRE image.\n\nEst-elle lumineuse ou sombre ?',
+    'size': 'Fermez les yeux.\nObservez VOTRE image.\n\nEst-elle grande ou petite ?',
+    'color': 'Fermez les yeux.\nObservez VOTRE image.\n\nQuelle est sa couleur dominante ?',
+    'clarity': 'Fermez les yeux.\nObservez VOTRE image.\n\nEst-elle nette ou floue ?',
+    'sound': 'Fermez les yeux.\nObservez VOTRE image.\n\nY a-t-il un son associé à cette image ?',
   };
 
   @override
@@ -56,31 +56,24 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
     _workingSubmodality = Submodality.neutral();
   }
 
-  void _dismissIntroduction() {
+  void _startObservationTimer() {
     setState(() {
-      _showIntroduction = false;
-    });
-  }
-
-  void _startIntegrationPhase() {
-    setState(() {
-      _currentPhase = ExplorationPhase.integration;
-      _integrationTimerStarted = false;
-    });
-  }
-
-  void _startIntegrationTimer() {
-    setState(() {
-      _integrationTimerStarted = true;
+      _observationTimerStarted = true;
     });
 
-    // Timer de 8 secondes pour la phase d'intégration
-    Future.delayed(const Duration(seconds: 8), () {
-      if (mounted && _currentPhase == ExplorationPhase.integration) {
+    // Timer de 12 secondes pour la phase d'observation
+    Future.delayed(const Duration(seconds: 12), () {
+      if (mounted && _currentPhase == ExplorationPhase.observation) {
         setState(() {
-          _currentPhase = ExplorationPhase.validation;
+          _currentPhase = ExplorationPhase.adjustment;
         });
       }
+    });
+  }
+
+  void _startValidation() {
+    setState(() {
+      _currentPhase = ExplorationPhase.validation;
     });
   }
 
@@ -88,8 +81,8 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
     if (_currentQuestionIndex < _questionKeys.length - 1) {
       setState(() {
         _currentQuestionIndex++;
-        _currentPhase = ExplorationPhase.manipulation;
-        _integrationTimerStarted = false;
+        _currentPhase = ExplorationPhase.observation;
+        _observationTimerStarted = false;
       });
     } else {
       // Save initial intensity
@@ -198,82 +191,23 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
     );
   }
 
-  Widget _buildIntroduction() {
-    return Container(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.circle,
-            size: 120,
-            color: AppTheme.azure.withOpacity(0.6),
-          ),
-          const SizedBox(height: 48),
-          Text(
-            'Le Cercle Miroir',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.gold,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Le cercle que vous allez voir représente votre image intérieure.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontSize: 18,
-                  height: 1.6,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Ce n\'est pas une photo concrète, mais un symbole qui reflète votre représentation mentale.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
-                  fontStyle: FontStyle.italic,
-                  height: 1.6,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Les gestes que vous ferez (glisser, pincer) donnent un mouvement physique à une idée intérieure.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
-                  height: 1.6,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 48),
-          ElevatedButton(
-            onPressed: _dismissIntroduction,
-            child: const Text('Commencer'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildQuestionWidget(String questionKey) {
     switch (questionKey) {
       case 'distance':
         return _ThreePhaseExercise(
           questionKey: questionKey,
           phase: _currentPhase,
-          integrationInstruction: _integrationInstructions[questionKey]!,
-          integrationTimerStarted: _integrationTimerStarted,
-          onStartIntegration: _startIntegrationPhase,
-          onStartTimer: _startIntegrationTimer,
+          observationInstruction: _observationInstructions[questionKey]!,
+          observationTimerStarted: _observationTimerStarted,
+          onStartObservationTimer: _startObservationTimer,
+          onStartValidation: _startValidation,
           onValidate: _nextQuestion,
-          manipulationWidget: Column(
+          adjustmentWidget: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
                 child: Text(
-                  HypnoticTexts.submodalityQuestions['distance']!,
+                  'Ajustez le cercle selon ce que vous avez observé',
                   style: Theme.of(context).textTheme.bodyLarge,
                   textAlign: TextAlign.center,
                 ),
@@ -306,13 +240,13 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
         return _ThreePhaseExercise(
           questionKey: questionKey,
           phase: _currentPhase,
-          integrationInstruction: _integrationInstructions[questionKey]!,
-          integrationTimerStarted: _integrationTimerStarted,
-          onStartIntegration: _startIntegrationPhase,
-          onStartTimer: _startIntegrationTimer,
+          observationInstruction: _observationInstructions[questionKey]!,
+          observationTimerStarted: _observationTimerStarted,
+          onStartObservationTimer: _startObservationTimer,
+          onStartValidation: _startValidation,
           onValidate: _nextQuestion,
-          manipulationWidget: SubmodalitySlider(
-            question: HypnoticTexts.submodalityQuestions['brightness']!,
+          adjustmentWidget: SubmodalitySlider(
+            question: 'Ajustez la luminosité de VOTRE image',
             value: _workingSubmodality.brightness,
             onChanged: (value) {
               _triggerHaptic();
@@ -330,17 +264,17 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
         return _ThreePhaseExercise(
           questionKey: questionKey,
           phase: _currentPhase,
-          integrationInstruction: _integrationInstructions[questionKey]!,
-          integrationTimerStarted: _integrationTimerStarted,
-          onStartIntegration: _startIntegrationPhase,
-          onStartTimer: _startIntegrationTimer,
+          observationInstruction: _observationInstructions[questionKey]!,
+          observationTimerStarted: _observationTimerStarted,
+          onStartObservationTimer: _startObservationTimer,
+          onStartValidation: _startValidation,
           onValidate: _nextQuestion,
-          manipulationWidget: Column(
+          adjustmentWidget: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
                 child: Text(
-                  HypnoticTexts.submodalityQuestions['size']!,
+                  'Ajustez le cercle selon ce que vous avez observé',
                   style: Theme.of(context).textTheme.bodyLarge,
                   textAlign: TextAlign.center,
                 ),
@@ -373,13 +307,13 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
         return _ThreePhaseExercise(
           questionKey: questionKey,
           phase: _currentPhase,
-          integrationInstruction: _integrationInstructions[questionKey]!,
-          integrationTimerStarted: _integrationTimerStarted,
-          onStartIntegration: _startIntegrationPhase,
-          onStartTimer: _startIntegrationTimer,
+          observationInstruction: _observationInstructions[questionKey]!,
+          observationTimerStarted: _observationTimerStarted,
+          onStartObservationTimer: _startObservationTimer,
+          onStartValidation: _startValidation,
           onValidate: _nextQuestion,
-          manipulationWidget: ColorPicker(
-            question: HypnoticTexts.submodalityQuestions['color']!,
+          adjustmentWidget: ColorPicker(
+            question: 'Choisissez la couleur dominante de VOTRE image',
             selectedColorValue: _workingSubmodality.colorValue,
             onColorSelected: (colorValue) {
               setState(() {
@@ -393,13 +327,13 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
         return _ThreePhaseExercise(
           questionKey: questionKey,
           phase: _currentPhase,
-          integrationInstruction: _integrationInstructions[questionKey]!,
-          integrationTimerStarted: _integrationTimerStarted,
-          onStartIntegration: _startIntegrationPhase,
-          onStartTimer: _startIntegrationTimer,
+          observationInstruction: _observationInstructions[questionKey]!,
+          observationTimerStarted: _observationTimerStarted,
+          onStartObservationTimer: _startObservationTimer,
+          onStartValidation: _startValidation,
           onValidate: _nextQuestion,
-          manipulationWidget: SubmodalitySlider(
-            question: HypnoticTexts.submodalityQuestions['clarity']!,
+          adjustmentWidget: SubmodalitySlider(
+            question: 'Ajustez la netteté de VOTRE image',
             value: _workingSubmodality.clarity,
             onChanged: (value) {
               _triggerHaptic();
@@ -417,12 +351,12 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
         return _ThreePhaseExercise(
           questionKey: questionKey,
           phase: _currentPhase,
-          integrationInstruction: _integrationInstructions[questionKey]!,
-          integrationTimerStarted: _integrationTimerStarted,
-          onStartIntegration: _startIntegrationPhase,
-          onStartTimer: _startIntegrationTimer,
+          observationInstruction: _observationInstructions[questionKey]!,
+          observationTimerStarted: _observationTimerStarted,
+          onStartObservationTimer: _startObservationTimer,
+          onStartValidation: _startValidation,
           onValidate: _nextQuestion,
-          manipulationWidget: _SoundSelector(
+          adjustmentWidget: _SoundSelector(
             currentLevel: _workingSubmodality.soundLevel,
             onChanged: (level) {
               setState(() {
@@ -447,26 +381,6 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_showIntroduction) {
-      return Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppTheme.background,
-                AppTheme.secondary.withOpacity(0.2),
-              ],
-            ),
-          ),
-          child: SafeArea(
-            child: _buildIntroduction(),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -515,52 +429,37 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
   }
 }
 
-/// Widget qui encapsule la structure 3 phases (YO/YF)
+/// Widget qui encapsule la structure 3 phases (YF → YO → YO)
 class _ThreePhaseExercise extends StatelessWidget {
   final String questionKey;
   final ExplorationPhase phase;
-  final String integrationInstruction;
-  final bool integrationTimerStarted;
-  final VoidCallback onStartIntegration;
-  final VoidCallback onStartTimer;
+  final String observationInstruction;
+  final bool observationTimerStarted;
+  final VoidCallback onStartObservationTimer;
+  final VoidCallback onStartValidation;
   final VoidCallback onValidate;
-  final Widget manipulationWidget;
+  final Widget adjustmentWidget;
 
   const _ThreePhaseExercise({
     required this.questionKey,
     required this.phase,
-    required this.integrationInstruction,
-    required this.integrationTimerStarted,
-    required this.onStartIntegration,
-    required this.onStartTimer,
+    required this.observationInstruction,
+    required this.observationTimerStarted,
+    required this.onStartObservationTimer,
+    required this.onStartValidation,
     required this.onValidate,
-    required this.manipulationWidget,
+    required this.adjustmentWidget,
   });
 
   @override
   Widget build(BuildContext context) {
     switch (phase) {
-      case ExplorationPhase.manipulation:
-        // Phase 1: Manipulation (YO)
-        return Column(
-          children: [
-            Expanded(child: manipulationWidget),
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: ElevatedButton(
-                onPressed: onStartIntegration,
-                child: const Text('Fermer les yeux et ressentir'),
-              ),
-            ),
-          ],
-        );
-
-      case ExplorationPhase.integration:
-        // Phase 2: Intégration (YF)
-        if (!integrationTimerStarted) {
-          // Show instruction and start timer automatically
+      case ExplorationPhase.observation:
+        // Phase 1: Observation (YF - Yeux Fermés)
+        if (!observationTimerStarted) {
+          // Start timer automatically when entering observation phase
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            onStartTimer();
+            onStartObservationTimer();
           });
         }
 
@@ -572,19 +471,19 @@ class _ThreePhaseExercise extends StatelessWidget {
               children: [
                 Icon(
                   Icons.visibility_off,
-                  size: 80,
+                  size: 100,
                   color: AppTheme.gold.withOpacity(0.6),
                 )
                     .animate(onPlay: (controller) => controller.repeat())
                     .fadeIn(duration: 2000.ms)
                     .then()
                     .fadeOut(duration: 2000.ms),
-                const SizedBox(height: 48),
+                const SizedBox(height: 64),
                 Text(
-                  integrationInstruction,
+                  observationInstruction,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontSize: 20,
-                        fontStyle: FontStyle.italic,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w500,
                         color: AppTheme.gold,
                         height: 1.8,
                       ),
@@ -595,6 +494,52 @@ class _ThreePhaseExercise extends StatelessWidget {
               ],
             ),
           ),
+        );
+
+      case ExplorationPhase.adjustment:
+        // Phase 2: Ajustement (YO - Yeux Ouverts)
+        return Column(
+          children: [
+            // Instruction "Ouvrez les yeux"
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              decoration: BoxDecoration(
+                color: AppTheme.emerald.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.visibility,
+                    color: AppTheme.emerald,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Ouvrez les yeux',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.emerald,
+                    ),
+                  ),
+                ],
+              ),
+            )
+                .animate()
+                .fadeIn(duration: 800.ms)
+                .scale(duration: 600.ms, curve: Curves.elasticOut),
+            const SizedBox(height: 24),
+            Expanded(child: adjustmentWidget),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: ElevatedButton(
+                onPressed: onStartValidation,
+                child: const Text('J\'ai ajusté'),
+              ),
+            ),
+          ],
         );
 
       case ExplorationPhase.validation:
@@ -611,9 +556,10 @@ class _ThreePhaseExercise extends StatelessWidget {
                 .scale(duration: 600.ms, curve: Curves.elasticOut),
             const SizedBox(height: 32),
             Text(
-              'Ouvrez les yeux.\nNous passons à l\'attribut suivant.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 18,
+              'Est-ce correct ?',
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
                     color: AppTheme.gold,
                   ),
               textAlign: TextAlign.center,
@@ -623,10 +569,10 @@ class _ThreePhaseExercise extends StatelessWidget {
             const SizedBox(height: 48),
             ElevatedButton(
               onPressed: onValidate,
-              child: const Text('Suivant'),
+              child: const Text('Oui, continuer'),
             )
                 .animate()
-                .fadeIn(duration: 600.ms, delay: 800.ms),
+                .fadeIn(duration: 600.ms, delay: 600.ms),
           ],
         );
     }
@@ -659,10 +605,9 @@ class _ClarityVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Changed from rectangle to circle
     return Center(
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(110), // Circular shape
+        borderRadius: BorderRadius.circular(110),
         child: BackdropFilter(
           filter: ImageFilter.blur(
             sigmaX: (1 - clarity) * 10,
@@ -672,8 +617,8 @@ class _ClarityVisual extends StatelessWidget {
             width: 220,
             height: 220,
             decoration: BoxDecoration(
-              shape: BoxShape.circle, // Circle instead of rounded rectangle
-              color: AppTheme.azure.withOpacity(0.6), // Changed to azur
+              shape: BoxShape.circle,
+              color: AppTheme.azure.withOpacity(0.6),
             ),
             child: const Center(
               child: Icon(Icons.image, size: 60, color: Colors.white),
@@ -702,7 +647,7 @@ class _SoundSelector extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
           child: Text(
-            HypnoticTexts.submodalityQuestions['sound']!,
+            'Sélectionnez le niveau sonore de VOTRE image',
             style: Theme.of(context).textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
@@ -812,8 +757,6 @@ class _InteractiveDistanceVisualState extends State<_InteractiveDistanceVisual> 
         _triggerHaptic();
         setState(() {
           _dragOffset = (_dragOffset + details.delta.dy).clamp(-maxOffset, maxOffset);
-          // Map drag offset to distance (0.0 to 1.0)
-          // Dragging up (negative) = closer (0), dragging down (positive) = farther (1)
           final normalizedDistance = ((_dragOffset + maxOffset) / (maxOffset * 2)).clamp(0.0, 1.0);
           widget.onDistanceChanged(normalizedDistance);
         });
@@ -823,7 +766,6 @@ class _InteractiveDistanceVisualState extends State<_InteractiveDistanceVisual> 
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Guide text
             Positioned(
               top: 20,
               child: Text(
@@ -835,16 +777,15 @@ class _InteractiveDistanceVisualState extends State<_InteractiveDistanceVisual> 
                 ),
               ),
             ),
-            // Interactive circle
             Center(
               child: Container(
-                width: 200 - (widget.distance * 100), // Proche = grand, Éloigné = petit
+                width: 200 - (widget.distance * 100),
                 height: 200 - (widget.distance * 100),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppTheme.azure.withOpacity(0.2 + (1 - widget.distance) * 0.4), // Proche = plus opaque
+                      AppTheme.azure.withOpacity(0.2 + (1 - widget.distance) * 0.4),
                       AppTheme.primary.withOpacity(0.1 + (1 - widget.distance) * 0.3),
                       Colors.transparent,
                     ],
@@ -866,7 +807,6 @@ class _InteractiveDistanceVisualState extends State<_InteractiveDistanceVisual> 
                 ),
               ),
             ),
-            // Distance indicator
             Positioned(
               bottom: 20,
               child: Text(
@@ -916,7 +856,6 @@ class _InteractiveSizeVisualState extends State<_InteractiveSizeVisual> {
         _triggerHaptic();
         setState(() {
           _baseSize = (_baseSize * details.scale).clamp(0.5, 2.0);
-          // Map scale to size (0.0 to 1.0)
           final normalizedSize = ((_baseSize - 0.5) / 1.5).clamp(0.0, 1.0);
           widget.onSizeChanged(normalizedSize);
         });
@@ -931,7 +870,6 @@ class _InteractiveSizeVisualState extends State<_InteractiveSizeVisual> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Guide text
             Positioned(
               top: 20,
               child: Text(
@@ -943,24 +881,23 @@ class _InteractiveSizeVisualState extends State<_InteractiveSizeVisual> {
                 ),
               ),
             ),
-            // Interactive circle (CHANGED TO AZUR)
             Center(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 100),
-                width: 100 + (widget.size * 150), // Min 100, Max 250
+                width: 100 + (widget.size * 150),
                 height: 100 + (widget.size * 150),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppTheme.azure.withOpacity(0.7), // Changed from emerald to azur
+                      AppTheme.azure.withOpacity(0.7),
                       AppTheme.azure.withOpacity(0.4),
                       AppTheme.azure.withOpacity(0.1),
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.azure.withOpacity(0.4), // Changed from emerald to azur
+                      color: AppTheme.azure.withOpacity(0.4),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -969,13 +906,12 @@ class _InteractiveSizeVisualState extends State<_InteractiveSizeVisual> {
                 child: Center(
                   child: Icon(
                     Icons.open_in_full,
-                    size: 40 + (widget.size * 30), // Icon proportionnel
+                    size: 40 + (widget.size * 30),
                     color: Colors.white.withOpacity(0.8),
                   ),
                 ),
               ),
             ),
-            // Size indicator
             Positioned(
               bottom: 20,
               child: Text(

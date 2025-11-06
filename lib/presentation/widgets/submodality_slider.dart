@@ -89,6 +89,7 @@ class ColorPicker extends StatelessWidget {
   });
 
   static const List<int> colors = [
+    0xFF000000, // Noir (pour images noir et blanc)
     0xFF808080, // Gris
     0xFFFF0000, // Rouge
     0xFFFF8800, // Orange
