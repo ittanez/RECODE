@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/constants/texts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/use_cases/transformation_state.dart';
+import '../widgets/animated_theme_icons.dart';
 import 'exploration_screen.dart';
 
 class ThemeSelectionScreen extends ConsumerWidget {
@@ -44,7 +45,6 @@ class ThemeSelectionScreen extends ConsumerWidget {
                   children: HypnoticTexts.themes.entries.map((entry) {
                     return _ThemeCard(
                       themeKey: entry.key,
-                      emoji: entry.value['emoji']!,
                       title: entry.value['title']!,
                       description: entry.value['description']!,
                       onTap: () {
@@ -77,14 +77,12 @@ class ThemeSelectionScreen extends ConsumerWidget {
 
 class _ThemeCard extends StatefulWidget {
   final String themeKey;
-  final String emoji;
   final String title;
   final String description;
   final VoidCallback onTap;
 
   const _ThemeCard({
     required this.themeKey,
-    required this.emoji,
     required this.title,
     required this.description,
     required this.onTap,
@@ -96,6 +94,21 @@ class _ThemeCard extends StatefulWidget {
 
 class _ThemeCardState extends State<_ThemeCard> {
   bool _isHovered = false;
+
+  Widget _getAnimatedIcon() {
+    switch (widget.themeKey) {
+      case 'fear':
+        return DissolvingCloudIcon(size: 56, isHovered: _isHovered);
+      case 'belief':
+        return OpeningLockIcon(size: 56, isHovered: _isHovered);
+      case 'memory':
+        return HypnoticSpiralIcon(size: 56, isHovered: _isHovered);
+      case 'resource':
+        return SproutingSeedIcon(size: 56, isHovered: _isHovered);
+      default:
+        return const Icon(Icons.lightbulb, size: 56);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -140,9 +153,10 @@ class _ThemeCardState extends State<_ThemeCard> {
           ),
           child: Row(
             children: [
-              Text(
-                widget.emoji,
-                style: const TextStyle(fontSize: 48),
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: _getAnimatedIcon(),
               ),
               const SizedBox(width: 20),
               Expanded(

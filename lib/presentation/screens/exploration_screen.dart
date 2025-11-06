@@ -123,17 +123,37 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
   Widget _buildQuestionWidget(String questionKey) {
     switch (questionKey) {
       case 'distance':
-        return SubmodalitySlider(
-          question: HypnoticTexts.submodalityQuestions['distance']!,
-          value: _workingSubmodality.distance,
-          onChanged: (value) {
-            setState(() {
-              _workingSubmodality = _workingSubmodality.copyWith(distance: value);
-            });
-          },
-          leftLabel: 'Proche',
-          rightLabel: 'Éloigné',
-          visualFeedback: _DistanceVisual(distance: _workingSubmodality.distance),
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+              child: Text(
+                HypnoticTexts.submodalityQuestions['distance']!,
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Faites glisser le cercle pour ajuster la distance',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: AppTheme.gold.withOpacity(0.7),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            Expanded(
+              child: _InteractiveDistanceVisual(
+                distance: _workingSubmodality.distance,
+                onDistanceChanged: (value) {
+                  setState(() {
+                    _workingSubmodality = _workingSubmodality.copyWith(distance: value);
+                  });
+                },
+              ),
+            ),
+          ],
         );
 
       case 'brightness':
@@ -151,17 +171,37 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
         );
 
       case 'size':
-        return SubmodalitySlider(
-          question: HypnoticTexts.submodalityQuestions['size']!,
-          value: _workingSubmodality.size,
-          onChanged: (value) {
-            setState(() {
-              _workingSubmodality = _workingSubmodality.copyWith(size: value);
-            });
-          },
-          leftLabel: 'Petit',
-          rightLabel: 'Grand',
-          visualFeedback: _SizeVisual(size: _workingSubmodality.size),
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+              child: Text(
+                HypnoticTexts.submodalityQuestions['size']!,
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Pincez pour ajuster la taille',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: AppTheme.gold.withOpacity(0.7),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            Expanded(
+              child: _InteractiveSizeVisual(
+                size: _workingSubmodality.size,
+                onSizeChanged: (value) {
+                  setState(() {
+                    _workingSubmodality = _workingSubmodality.copyWith(size: value);
+                  });
+                },
+              ),
+            ),
+          ],
         );
 
       case 'color':
@@ -444,6 +484,205 @@ class _SoundButton extends StatelessWidget {
             color: isSelected ? AppTheme.gold : AppTheme.textPrimary,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Interactive gesture-based widgets
+class _InteractiveDistanceVisual extends StatefulWidget {
+  final double distance;
+  final ValueChanged<double> onDistanceChanged;
+
+  const _InteractiveDistanceVisual({
+    required this.distance,
+    required this.onDistanceChanged,
+  });
+
+  @override
+  State<_InteractiveDistanceVisual> createState() => _InteractiveDistanceVisualState();
+}
+
+class _InteractiveDistanceVisualState extends State<_InteractiveDistanceVisual> {
+  double _dragOffset = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxOffset = screenWidth * 0.35;
+
+    return GestureDetector(
+      onVerticalDragUpdate: (details) {
+        setState(() {
+          _dragOffset = (_dragOffset + details.delta.dy).clamp(-maxOffset, maxOffset);
+          // Map drag offset to distance (0.0 to 1.0)
+          // Dragging up (negative) = closer (0), dragging down (positive) = farther (1)
+          final normalizedDistance = ((_dragOffset + maxOffset) / (maxOffset * 2)).clamp(0.0, 1.0);
+          widget.onDistanceChanged(normalizedDistance);
+        });
+      },
+      child: Container(
+        color: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Guide text
+            Positioned(
+              top: 20,
+              child: Text(
+                widget.distance < 0.3 ? 'Proche' : widget.distance > 0.7 ? 'Éloigné' : 'Moyen',
+                style: TextStyle(
+                  color: AppTheme.gold.withOpacity(0.8),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            // Interactive circle
+            Center(
+              child: Container(
+                width: 100 + (widget.distance * 50),
+                height: 100 + (widget.distance * 50),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.azure.withOpacity(0.5 - (widget.distance * 0.3)),
+                      AppTheme.primary.withOpacity(0.3 - (widget.distance * 0.2)),
+                      Colors.transparent,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.azure.withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.touch_app,
+                    size: 40,
+                    color: AppTheme.gold.withOpacity(0.6),
+                  ),
+                ),
+              ),
+            ),
+            // Distance indicator
+            Positioned(
+              bottom: 20,
+              child: Text(
+                '${(widget.distance * 100).toInt()}%',
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InteractiveSizeVisual extends StatefulWidget {
+  final double size;
+  final ValueChanged<double> onSizeChanged;
+
+  const _InteractiveSizeVisual({
+    required this.size,
+    required this.onSizeChanged,
+  });
+
+  @override
+  State<_InteractiveSizeVisual> createState() => _InteractiveSizeVisualState();
+}
+
+class _InteractiveSizeVisualState extends State<_InteractiveSizeVisual> {
+  double _baseSize = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onScaleUpdate: (details) {
+        setState(() {
+          _baseSize = (_baseSize * details.scale).clamp(0.5, 2.0);
+          // Map scale to size (0.0 to 1.0)
+          final normalizedSize = ((_baseSize - 0.5) / 1.5).clamp(0.0, 1.0);
+          widget.onSizeChanged(normalizedSize);
+        });
+      },
+      onScaleEnd: (details) {
+        setState(() {
+          _baseSize = 1.0;
+        });
+      },
+      child: Container(
+        color: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Guide text
+            Positioned(
+              top: 20,
+              child: Text(
+                widget.size < 0.3 ? 'Petit' : widget.size > 0.7 ? 'Grand' : 'Moyen',
+                style: TextStyle(
+                  color: AppTheme.gold.withOpacity(0.8),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            // Interactive circle
+            Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 100),
+                width: 50 + (widget.size * 120),
+                height: 50 + (widget.size * 120),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.emerald.withOpacity(0.7),
+                      AppTheme.emerald.withOpacity(0.4),
+                      AppTheme.emerald.withOpacity(0.1),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.emerald.withOpacity(0.4),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.open_in_full,
+                    size: 30 + (widget.size * 20),
+                    color: Colors.white.withOpacity(0.8),
+                  ),
+                ),
+              ),
+            ),
+            // Size indicator
+            Positioned(
+              bottom: 20,
+              child: Text(
+                '${(widget.size * 100).toInt()}%',
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
