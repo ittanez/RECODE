@@ -6,7 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/submodality.dart';
 import '../../domain/use_cases/transformation_state.dart';
 import '../widgets/hypnotic_text.dart';
-import 'anchor_screen.dart';
+import 'feedback_screen.dart';
 
 class TransformationScreen extends ConsumerStatefulWidget {
   const TransformationScreen({super.key});

@@ -96,8 +96,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       return '';
     } else if (_breathCycle == 2) {
       return 'Si vous le souhaitez... fermez doucement les yeux';
+    } else if (_breathCycle == 3) {
+      return 'Laissez vos yeux se fermer. Faites le point sur l\'image que vous venez de choisir.';
     } else if (_breathCycle >= 4 && _breathCycle < 5) {
-      return 'Vous pouvez rouvrir les yeux... en douceur';
+      return 'Vous pouvez rouvrir les yeux... en douceur, ou les garder clos si cela est confortable. L\'écran va maintenant vous guider.';
     }
     return '';
   }

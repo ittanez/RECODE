@@ -1,13 +1,22 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:vibration/vibration.dart';
 import '../../core/constants/texts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/submodality.dart';
 import '../../domain/use_cases/transformation_state.dart';
 import '../widgets/submodality_slider.dart';
 import 'transformation_screen.dart';
+
+/// Phase d'exploration (Protocole YO/YF)
+enum ExplorationPhase {
+  manipulation, // Phase 1: Ajustement (Yeux Ouverts)
+  integration,  // Phase 2: Ressenti (Yeux Fermés - pause 5-10s)
+  validation,   // Phase 3: Confirmation (Yeux Ouverts)
+}
 
 class ExplorationScreen extends ConsumerStatefulWidget {
   const ExplorationScreen({super.key});
@@ -18,7 +27,10 @@ class ExplorationScreen extends ConsumerStatefulWidget {
 
 class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
   int _currentQuestionIndex = 0;
+  ExplorationPhase _currentPhase = ExplorationPhase.manipulation;
   late Submodality _workingSubmodality;
+  bool _showIntroduction = true;
+  bool _integrationTimerStarted = false;
 
   final List<String> _questionKeys = [
     'distance',
@@ -29,16 +41,55 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
     'sound',
   ];
 
+  final Map<String, String> _integrationInstructions = {
+    'distance': 'Fermez les yeux. Observez l\'image ajustée. Prenez note de la sensation dans votre corps.',
+    'brightness': 'Fermez les yeux. Ressentez la luminosité de cette image. Comment votre corps réagit-il ?',
+    'size': 'Fermez les yeux. Ressentez la taille de cette image. Observez les sensations.',
+    'color': 'Fermez les yeux. Ressentez cette couleur. Qu\'évoque-t-elle en vous ?',
+    'clarity': 'Fermez les yeux. Ressentez la netteté de cette image. Comment vous sentez-vous ?',
+    'sound': 'Fermez les yeux. Écoutez ce son intérieur. Observez vos sensations.',
+  };
+
   @override
   void initState() {
     super.initState();
     _workingSubmodality = Submodality.neutral();
   }
 
+  void _dismissIntroduction() {
+    setState(() {
+      _showIntroduction = false;
+    });
+  }
+
+  void _startIntegrationPhase() {
+    setState(() {
+      _currentPhase = ExplorationPhase.integration;
+      _integrationTimerStarted = false;
+    });
+  }
+
+  void _startIntegrationTimer() {
+    setState(() {
+      _integrationTimerStarted = true;
+    });
+
+    // Timer de 8 secondes pour la phase d'intégration
+    Future.delayed(const Duration(seconds: 8), () {
+      if (mounted && _currentPhase == ExplorationPhase.integration) {
+        setState(() {
+          _currentPhase = ExplorationPhase.validation;
+        });
+      }
+    });
+  }
+
   void _nextQuestion() {
     if (_currentQuestionIndex < _questionKeys.length - 1) {
       setState(() {
         _currentQuestionIndex++;
+        _currentPhase = ExplorationPhase.manipulation;
+        _integrationTimerStarted = false;
       });
     } else {
       // Save initial intensity
@@ -147,123 +198,238 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
     );
   }
 
+  Widget _buildIntroduction() {
+    return Container(
+      padding: const EdgeInsets.all(32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.circle,
+            size: 120,
+            color: AppTheme.azure.withOpacity(0.6),
+          ),
+          const SizedBox(height: 48),
+          Text(
+            'Le Cercle Miroir',
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.gold,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Le cercle que vous allez voir représente votre image intérieure.',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontSize: 18,
+                  height: 1.6,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Ce n\'est pas une photo concrète, mais un symbole qui reflète votre représentation mentale.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textSecondary,
+                  fontStyle: FontStyle.italic,
+                  height: 1.6,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Les gestes que vous ferez (glisser, pincer) donnent un mouvement physique à une idée intérieure.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textSecondary,
+                  height: 1.6,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 48),
+          ElevatedButton(
+            onPressed: _dismissIntroduction,
+            child: const Text('Commencer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuestionWidget(String questionKey) {
     switch (questionKey) {
       case 'distance':
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
-              child: Text(
-                HypnoticTexts.submodalityQuestions['distance']!,
-                style: Theme.of(context).textTheme.bodyLarge,
+        return _ThreePhaseExercise(
+          questionKey: questionKey,
+          phase: _currentPhase,
+          integrationInstruction: _integrationInstructions[questionKey]!,
+          integrationTimerStarted: _integrationTimerStarted,
+          onStartIntegration: _startIntegrationPhase,
+          onStartTimer: _startIntegrationTimer,
+          onValidate: _nextQuestion,
+          manipulationWidget: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+                child: Text(
+                  HypnoticTexts.submodalityQuestions['distance']!,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Faites glisser le cercle pour ajuster la distance',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: AppTheme.gold.withOpacity(0.7),
+                    ),
                 textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Faites glisser le cercle pour ajuster la distance',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: AppTheme.gold.withOpacity(0.7),
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            Expanded(
-              child: _InteractiveDistanceVisual(
-                distance: _workingSubmodality.distance,
-                onDistanceChanged: (value) {
-                  setState(() {
-                    _workingSubmodality = _workingSubmodality.copyWith(distance: value);
-                  });
-                },
+              const SizedBox(height: 32),
+              Expanded(
+                child: _InteractiveDistanceVisual(
+                  distance: _workingSubmodality.distance,
+                  onDistanceChanged: (value) {
+                    setState(() {
+                      _workingSubmodality = _workingSubmodality.copyWith(distance: value);
+                    });
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
 
       case 'brightness':
-        return SubmodalitySlider(
-          question: HypnoticTexts.submodalityQuestions['brightness']!,
-          value: _workingSubmodality.brightness,
-          onChanged: (value) {
-            setState(() {
-              _workingSubmodality = _workingSubmodality.copyWith(brightness: value);
-            });
-          },
-          leftLabel: 'Sombre',
-          rightLabel: 'Lumineux',
-          visualFeedback: _BrightnessVisual(brightness: _workingSubmodality.brightness),
+        return _ThreePhaseExercise(
+          questionKey: questionKey,
+          phase: _currentPhase,
+          integrationInstruction: _integrationInstructions[questionKey]!,
+          integrationTimerStarted: _integrationTimerStarted,
+          onStartIntegration: _startIntegrationPhase,
+          onStartTimer: _startIntegrationTimer,
+          onValidate: _nextQuestion,
+          manipulationWidget: SubmodalitySlider(
+            question: HypnoticTexts.submodalityQuestions['brightness']!,
+            value: _workingSubmodality.brightness,
+            onChanged: (value) {
+              _triggerHaptic();
+              setState(() {
+                _workingSubmodality = _workingSubmodality.copyWith(brightness: value);
+              });
+            },
+            leftLabel: 'Sombre',
+            rightLabel: 'Lumineux',
+            visualFeedback: _BrightnessVisual(brightness: _workingSubmodality.brightness),
+          ),
         );
 
       case 'size':
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
-              child: Text(
-                HypnoticTexts.submodalityQuestions['size']!,
-                style: Theme.of(context).textTheme.bodyLarge,
+        return _ThreePhaseExercise(
+          questionKey: questionKey,
+          phase: _currentPhase,
+          integrationInstruction: _integrationInstructions[questionKey]!,
+          integrationTimerStarted: _integrationTimerStarted,
+          onStartIntegration: _startIntegrationPhase,
+          onStartTimer: _startIntegrationTimer,
+          onValidate: _nextQuestion,
+          manipulationWidget: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+                child: Text(
+                  HypnoticTexts.submodalityQuestions['size']!,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Pincez pour ajuster la taille',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: AppTheme.gold.withOpacity(0.7),
+                    ),
                 textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Pincez pour ajuster la taille',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: AppTheme.gold.withOpacity(0.7),
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            Expanded(
-              child: _InteractiveSizeVisual(
-                size: _workingSubmodality.size,
-                onSizeChanged: (value) {
-                  setState(() {
-                    _workingSubmodality = _workingSubmodality.copyWith(size: value);
-                  });
-                },
+              const SizedBox(height: 32),
+              Expanded(
+                child: _InteractiveSizeVisual(
+                  size: _workingSubmodality.size,
+                  onSizeChanged: (value) {
+                    setState(() {
+                      _workingSubmodality = _workingSubmodality.copyWith(size: value);
+                    });
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
 
       case 'color':
-        return ColorPicker(
-          question: HypnoticTexts.submodalityQuestions['color']!,
-          selectedColorValue: _workingSubmodality.colorValue,
-          onColorSelected: (colorValue) {
-            setState(() {
-              _workingSubmodality = _workingSubmodality.copyWith(colorValue: colorValue);
-            });
-          },
+        return _ThreePhaseExercise(
+          questionKey: questionKey,
+          phase: _currentPhase,
+          integrationInstruction: _integrationInstructions[questionKey]!,
+          integrationTimerStarted: _integrationTimerStarted,
+          onStartIntegration: _startIntegrationPhase,
+          onStartTimer: _startIntegrationTimer,
+          onValidate: _nextQuestion,
+          manipulationWidget: ColorPicker(
+            question: HypnoticTexts.submodalityQuestions['color']!,
+            selectedColorValue: _workingSubmodality.colorValue,
+            onColorSelected: (colorValue) {
+              setState(() {
+                _workingSubmodality = _workingSubmodality.copyWith(colorValue: colorValue);
+              });
+            },
+          ),
         );
 
       case 'clarity':
-        return SubmodalitySlider(
-          question: HypnoticTexts.submodalityQuestions['clarity']!,
-          value: _workingSubmodality.clarity,
-          onChanged: (value) {
-            setState(() {
-              _workingSubmodality = _workingSubmodality.copyWith(clarity: value);
-            });
-          },
-          leftLabel: 'Flou',
-          rightLabel: 'Net',
-          visualFeedback: _ClarityVisual(clarity: _workingSubmodality.clarity),
+        return _ThreePhaseExercise(
+          questionKey: questionKey,
+          phase: _currentPhase,
+          integrationInstruction: _integrationInstructions[questionKey]!,
+          integrationTimerStarted: _integrationTimerStarted,
+          onStartIntegration: _startIntegrationPhase,
+          onStartTimer: _startIntegrationTimer,
+          onValidate: _nextQuestion,
+          manipulationWidget: SubmodalitySlider(
+            question: HypnoticTexts.submodalityQuestions['clarity']!,
+            value: _workingSubmodality.clarity,
+            onChanged: (value) {
+              _triggerHaptic();
+              setState(() {
+                _workingSubmodality = _workingSubmodality.copyWith(clarity: value);
+              });
+            },
+            leftLabel: 'Flou',
+            rightLabel: 'Net',
+            visualFeedback: _ClarityVisual(clarity: _workingSubmodality.clarity),
+          ),
         );
 
       case 'sound':
-        return _SoundSelector(
-          currentLevel: _workingSubmodality.soundLevel,
-          onChanged: (level) {
-            setState(() {
-              _workingSubmodality = _workingSubmodality.copyWith(soundLevel: level);
-            });
-          },
+        return _ThreePhaseExercise(
+          questionKey: questionKey,
+          phase: _currentPhase,
+          integrationInstruction: _integrationInstructions[questionKey]!,
+          integrationTimerStarted: _integrationTimerStarted,
+          onStartIntegration: _startIntegrationPhase,
+          onStartTimer: _startIntegrationTimer,
+          onValidate: _nextQuestion,
+          manipulationWidget: _SoundSelector(
+            currentLevel: _workingSubmodality.soundLevel,
+            onChanged: (level) {
+              setState(() {
+                _workingSubmodality = _workingSubmodality.copyWith(soundLevel: level);
+              });
+            },
+          ),
         );
 
       default:
@@ -271,8 +437,36 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
     }
   }
 
+  Future<void> _triggerHaptic() async {
+    if (await Vibration.hasVibrator() ?? false) {
+      Vibration.vibrate(duration: 20);
+    } else {
+      HapticFeedback.lightImpact();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_showIntroduction) {
+      return Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppTheme.background,
+                AppTheme.secondary.withOpacity(0.2),
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: _buildIntroduction(),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -304,27 +498,12 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
 
               // Question
               Expanded(
-                child: SingleChildScrollView(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
-                    child: Padding(
-                      key: ValueKey(_currentQuestionIndex),
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: _buildQuestionWidget(_questionKeys[_currentQuestionIndex]),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Next button
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: ElevatedButton(
-                  onPressed: _nextQuestion,
-                  child: Text(
-                    _currentQuestionIndex < _questionKeys.length - 1
-                        ? 'Suivant'
-                        : 'Transformer',
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  child: Padding(
+                    key: ValueKey('${_currentQuestionIndex}_${_currentPhase.name}'),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: _buildQuestionWidget(_questionKeys[_currentQuestionIndex]),
                   ),
                 ),
               ),
@@ -336,26 +515,125 @@ class _ExplorationScreenState extends ConsumerState<ExplorationScreen> {
   }
 }
 
-// Visual feedback widgets
-class _DistanceVisual extends StatelessWidget {
-  final double distance;
-  const _DistanceVisual({required this.distance});
+/// Widget qui encapsule la structure 3 phases (YO/YF)
+class _ThreePhaseExercise extends StatelessWidget {
+  final String questionKey;
+  final ExplorationPhase phase;
+  final String integrationInstruction;
+  final bool integrationTimerStarted;
+  final VoidCallback onStartIntegration;
+  final VoidCallback onStartTimer;
+  final VoidCallback onValidate;
+  final Widget manipulationWidget;
+
+  const _ThreePhaseExercise({
+    required this.questionKey,
+    required this.phase,
+    required this.integrationInstruction,
+    required this.integrationTimerStarted,
+    required this.onStartIntegration,
+    required this.onStartTimer,
+    required this.onValidate,
+    required this.manipulationWidget,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 200 - (distance * 100), // Proche = grand, Éloigné = petit
-        height: 200 - (distance * 100),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppTheme.azure.withOpacity(0.2 + (1 - distance) * 0.4), // Proche = plus opaque
-        ),
-      ),
-    );
+    switch (phase) {
+      case ExplorationPhase.manipulation:
+        // Phase 1: Manipulation (YO)
+        return Column(
+          children: [
+            Expanded(child: manipulationWidget),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: ElevatedButton(
+                onPressed: onStartIntegration,
+                child: const Text('Fermer les yeux et ressentir'),
+              ),
+            ),
+          ],
+        );
+
+      case ExplorationPhase.integration:
+        // Phase 2: Intégration (YF)
+        if (!integrationTimerStarted) {
+          // Show instruction and start timer automatically
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onStartTimer();
+          });
+        }
+
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.visibility_off,
+                  size: 80,
+                  color: AppTheme.gold.withOpacity(0.6),
+                )
+                    .animate(onPlay: (controller) => controller.repeat())
+                    .fadeIn(duration: 2000.ms)
+                    .then()
+                    .fadeOut(duration: 2000.ms),
+                const SizedBox(height: 48),
+                Text(
+                  integrationInstruction,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontSize: 20,
+                        fontStyle: FontStyle.italic,
+                        color: AppTheme.gold,
+                        height: 1.8,
+                      ),
+                  textAlign: TextAlign.center,
+                )
+                    .animate()
+                    .fadeIn(duration: 1500.ms, delay: 500.ms),
+              ],
+            ),
+          ),
+        );
+
+      case ExplorationPhase.validation:
+        // Phase 3: Validation (YO)
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.check_circle,
+              size: 100,
+              color: AppTheme.emerald,
+            )
+                .animate()
+                .scale(duration: 600.ms, curve: Curves.elasticOut),
+            const SizedBox(height: 32),
+            Text(
+              'Ouvrez les yeux.\nNous passons à l\'attribut suivant.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontSize: 18,
+                    color: AppTheme.gold,
+                  ),
+              textAlign: TextAlign.center,
+            )
+                .animate()
+                .fadeIn(duration: 800.ms, delay: 300.ms),
+            const SizedBox(height: 48),
+            ElevatedButton(
+              onPressed: onValidate,
+              child: const Text('Suivant'),
+            )
+                .animate()
+                .fadeIn(duration: 600.ms, delay: 800.ms),
+          ],
+        );
+    }
   }
 }
 
+// Visual feedback widgets
 class _BrightnessVisual extends StatelessWidget {
   final double brightness;
   const _BrightnessVisual({required this.brightness});
@@ -375,34 +653,16 @@ class _BrightnessVisual extends StatelessWidget {
   }
 }
 
-class _SizeVisual extends StatelessWidget {
-  final double size;
-  const _SizeVisual({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 100 + (size * 150), // Min 100, Max 250
-        height: 100 + (size * 150),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppTheme.emerald.withOpacity(0.5),
-        ),
-      ),
-    );
-  }
-}
-
 class _ClarityVisual extends StatelessWidget {
   final double clarity;
   const _ClarityVisual({required this.clarity});
 
   @override
   Widget build(BuildContext context) {
+    // Changed from rectangle to circle
     return Center(
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(110), // Circular shape
         child: BackdropFilter(
           filter: ImageFilter.blur(
             sigmaX: (1 - clarity) * 10,
@@ -412,8 +672,8 @@ class _ClarityVisual extends StatelessWidget {
             width: 220,
             height: 220,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              color: AppTheme.gold.withOpacity(0.5),
+              shape: BoxShape.circle, // Circle instead of rounded rectangle
+              color: AppTheme.azure.withOpacity(0.6), // Changed to azur
             ),
             child: const Center(
               child: Icon(Icons.image, size: 60, color: Colors.white),
@@ -534,6 +794,14 @@ class _InteractiveDistanceVisual extends StatefulWidget {
 class _InteractiveDistanceVisualState extends State<_InteractiveDistanceVisual> {
   double _dragOffset = 0;
 
+  Future<void> _triggerHaptic() async {
+    if (await Vibration.hasVibrator() ?? false) {
+      Vibration.vibrate(duration: 20);
+    } else {
+      HapticFeedback.lightImpact();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -541,6 +809,7 @@ class _InteractiveDistanceVisualState extends State<_InteractiveDistanceVisual> 
 
     return GestureDetector(
       onVerticalDragUpdate: (details) {
+        _triggerHaptic();
         setState(() {
           _dragOffset = (_dragOffset + details.delta.dy).clamp(-maxOffset, maxOffset);
           // Map drag offset to distance (0.0 to 1.0)
@@ -632,10 +901,19 @@ class _InteractiveSizeVisual extends StatefulWidget {
 class _InteractiveSizeVisualState extends State<_InteractiveSizeVisual> {
   double _baseSize = 1.0;
 
+  Future<void> _triggerHaptic() async {
+    if (await Vibration.hasVibrator() ?? false) {
+      Vibration.vibrate(duration: 20);
+    } else {
+      HapticFeedback.lightImpact();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onScaleUpdate: (details) {
+        _triggerHaptic();
         setState(() {
           _baseSize = (_baseSize * details.scale).clamp(0.5, 2.0);
           // Map scale to size (0.0 to 1.0)
@@ -665,7 +943,7 @@ class _InteractiveSizeVisualState extends State<_InteractiveSizeVisual> {
                 ),
               ),
             ),
-            // Interactive circle
+            // Interactive circle (CHANGED TO AZUR)
             Center(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 100),
@@ -675,14 +953,14 @@ class _InteractiveSizeVisualState extends State<_InteractiveSizeVisual> {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppTheme.emerald.withOpacity(0.7),
-                      AppTheme.emerald.withOpacity(0.4),
-                      AppTheme.emerald.withOpacity(0.1),
+                      AppTheme.azure.withOpacity(0.7), // Changed from emerald to azur
+                      AppTheme.azure.withOpacity(0.4),
+                      AppTheme.azure.withOpacity(0.1),
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.emerald.withOpacity(0.4),
+                      color: AppTheme.azure.withOpacity(0.4), // Changed from emerald to azur
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
